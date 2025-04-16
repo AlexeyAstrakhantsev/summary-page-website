@@ -13,9 +13,6 @@ const nextConfig = {
         },
       ],
     },
-    experimental: {
-      serverComponentsExternalPackages: [], // Пакеты, которые должны быть бандлены отдельно
-    },
     env: {
       OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
     },

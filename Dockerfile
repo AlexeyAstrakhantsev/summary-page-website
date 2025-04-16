@@ -5,8 +5,8 @@ WORKDIR /app
 
 # Устанавливаем зависимости
 FROM base AS deps
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 # Собираем приложение
 FROM base AS builder
