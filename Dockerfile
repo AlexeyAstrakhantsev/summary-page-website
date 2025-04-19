@@ -1,35 +1,52 @@
-FROM node:18-alpine AS base
-
-# Устанавливаем рабочую директорию
+# --- Base image ---
+FROM node:20-alpine AS base
 WORKDIR /app
 
-# Устанавливаем зависимости
-FROM base AS deps
-COPY package.json ./
+# --- Install frontend dependencies ---
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Собираем приложение
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+# --- Install backend dependencies ---
+COPY package-backend.json ./
+RUN npm install --prefix . --package=package-backend.json
+
+# --- Copy and build app ---
 COPY . .
 RUN npm run build
 
-# Запускаем приложение
-FROM base AS runner
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# --- Prisma generate & migrate ---
+RUN npx prisma generate
 
-# Добавляем пользователя для безопасности
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-USER nextjs
+# --- Production image ---
+FROM node:20-alpine AS prod
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Установим только runtime зависимости
+COPY package.json package-lock.json ./
+RUN npm install --omit=dev
+COPY package-backend.json ./
+RUN npm install --prefix . --package=package-backend.json --omit=dev
 
-EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+# Копируем собранный фронт и backend
+COPY --from=base /app/.next ./.next
+COPY --from=base /app/public ./public
+COPY --from=base /app/next.config.js ./
+COPY --from=base /app/styles ./styles
+COPY --from=base /app/src ./src
+COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/.env .
 
-CMD ["node", "server.js"]
+# Генерируем Prisma Client (на всякий случай)
+RUN npx prisma generate
+
+# Открываем порты
+EXPOSE 3000 4000
+
+# Устанавливаем tini для управления процессами
+RUN apk add --no-cache tini
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Запуск: backend и frontend параллельно
+CMD ["sh", "-c", "node src/backend/server.js & npm start"]
