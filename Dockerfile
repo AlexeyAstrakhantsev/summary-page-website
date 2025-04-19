@@ -3,7 +3,7 @@ FROM node:20-alpine AS base
 WORKDIR /app
 
 # --- Install frontend dependencies ---
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN npm install
 
 # --- Install backend dependencies ---
@@ -24,7 +24,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Установим только runtime зависимости
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN npm install --omit=dev
 COPY package-backend.json ./
 RUN npm install --prefix . --package=package-backend.json --omit=dev
