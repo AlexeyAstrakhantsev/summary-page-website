@@ -7,8 +7,6 @@ COPY package.json ./
 RUN npm install
 
 # --- Install backend dependencies ---
-COPY package-backend.json ./
-RUN npm install --prefix . --package=package-backend.json
 
 # --- Copy and build app ---
 COPY . .
@@ -26,8 +24,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Установим только runtime зависимости
 COPY package.json ./
 RUN npm install --omit=dev
-COPY package-backend.json ./
-RUN npm install --prefix . --package=package-backend.json --omit=dev
 
 # Копируем собранный фронт и backend
 COPY --from=base /app/.next ./.next

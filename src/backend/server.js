@@ -16,6 +16,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health check endpoint
+app.get('/api/ping', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Google OAuth token verification
 async function verifyGoogleToken(idToken) {
   const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
