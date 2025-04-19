@@ -1,10 +1,17 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+// Настройки базы и порта (SQLite файл и порт сервера)
+const DATABASE_URL = "file:./dev.db";
+const PORT = 4000;
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: { url: DATABASE_URL }
+  }
+});
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -90,7 +97,6 @@ app.post('/api/generate-summary', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Backend API listening on port ${PORT}`);
 });

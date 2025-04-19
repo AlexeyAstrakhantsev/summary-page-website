@@ -36,7 +36,7 @@ COPY --from=base /app/next.config.js ./
 COPY --from=base /app/styles ./styles
 COPY --from=base /app/src ./src
 COPY --from=base /app/prisma ./prisma
-COPY --from=base /app/.env .
+
 
 # Генерируем Prisma Client (на всякий случай)
 RUN npx prisma generate
