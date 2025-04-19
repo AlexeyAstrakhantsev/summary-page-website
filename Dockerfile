@@ -33,7 +33,6 @@ RUN npm install --prefix . --package=package-backend.json --omit=dev
 COPY --from=base /app/.next ./.next
 COPY --from=base /app/public ./public
 COPY --from=base /app/next.config.js ./
-COPY --from=base /app/styles ./styles
 COPY --from=base /app/src ./src
 COPY --from=base /app/prisma ./prisma
 
