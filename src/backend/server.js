@@ -152,7 +152,15 @@ app.post('/api/generate-summary', async (req, res) => {
           requestsLimit: dailyLimit,
         },
       });
-    } else if (userLimit.requestsMade < userLimit.requestsLimit) {
+    } else if (userLimit.requestsMade < dailyLimit) {
+      // Если лимит был увеличен — обновить requestsLimit в базе
+      if (userLimit.requestsLimit !== dailyLimit) {
+        userLimit = await prisma.userLimit.update({
+          where: { id: userLimit.id },
+          data: { requestsLimit: dailyLimit }
+        });
+        console.log(`[SUMMARY] Updated requestsLimit for userLimit id=${userLimit.id} to ${dailyLimit}`);
+      }
       console.log(`[SUMMARY] Incrementing requestsMade for userLimit id=${userLimit.id}`);
       userLimit = await prisma.userLimit.update({
         where: { id: userLimit.id },
