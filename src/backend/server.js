@@ -198,6 +198,10 @@ app.post('/api/generate-summary', async (req, res) => {
       console.log(`[SUMMARY] Success. userId=${userId} requestsMade=${userLimit.requestsMade} limit=${userLimit.requestsLimit}`);
       res.json({ summary, requestsMade: userLimit.requestsMade, requestsLimit: userLimit.requestsLimit });
     } catch (err) {
+      if (typeof err.message === 'string' && err.message.startsWith('openrouter_limit:')) {
+        console.error('[SUMMARY] OpenRouter daily limit exceeded:', err.message);
+        return res.status(503).json({ error: 'OpenRouter daily limit exceeded' });
+      }
       console.error('[SUMMARY] OpenRouter error:', err);
       res.status(500).json({ error: 'Ошибка генерации саммари (OpenRouter)' });
     }

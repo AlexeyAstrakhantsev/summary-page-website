@@ -79,23 +79,36 @@ async function generateSummary({ text, model, detailLevel }) {
   // Логируем что отправляем на openrouter
   console.log('[OPENROUTER][REQ] model:', modelObj.id, 'detailLevel:', detailLevel, 'text:', text ? text.slice(0, 500) + (text.length > 500 ? '... [truncated]' : '') : '[empty]');
 
-  const response = await axios.post(
-    OPENROUTER_API_URL,
-    {
-      model: modelObj.id,
-      messages,
-      stream: false
-    },
-    {
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://summary-page.online',
-        'X-Title': 'Summary Page'
+  let response;
+  try {
+    response = await axios.post(
+      OPENROUTER_API_URL,
+      {
+        model: modelObj.id,
+        messages,
+        stream: false
       },
-      timeout: 60000
+      {
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://summary-page.online',
+          'X-Title': 'Summary Page'
+        },
+        timeout: 60000
+      }
+    );
+  } catch (err) {
+    if (err.response && (err.response.status === 429 || err.response.status === 403)) {
+      // Лимит OpenRouter исчерпан
+      console.error('[OPENROUTER][ERR] OpenRouter daily limit exceeded:', err.response.data);
+      const errorMsg = err.response.data?.error?.message || err.response.data?.error || 'OpenRouter daily limit exceeded';
+      throw new Error('openrouter_limit:' + errorMsg);
+    } else {
+      console.error('[OPENROUTER][ERR] Unexpected error:', err);
+      throw err;
     }
-  );
+  }
 
   // Логируем ответ openrouter (первые 500 символов summary)
   const summary = response.data && response.data.choices && response.data.choices[0].message.content
