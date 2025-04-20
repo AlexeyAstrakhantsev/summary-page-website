@@ -76,6 +76,8 @@ async function generateSummary({ text, model, detailLevel }) {
     { role: 'system', content: detailObj.systemPrompt },
     { role: 'user', content: modelObj.prompt + '\n' + text }
   ];
+  // Логируем что отправляем на openrouter
+  console.log('[OPENROUTER][REQ] model:', modelObj.id, 'detailLevel:', detailLevel, 'text:', text ? text.slice(0, 500) + (text.length > 500 ? '... [truncated]' : '') : '[empty]');
 
   const response = await axios.post(
     OPENROUTER_API_URL,
@@ -88,15 +90,23 @@ async function generateSummary({ text, model, detailLevel }) {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://summary-page.site',
+        'HTTP-Referer': 'https://summary-page.online',
         'X-Title': 'Summary Page'
       },
       timeout: 60000
     }
   );
 
+  // Логируем ответ openrouter (первые 500 символов summary)
+  const summary = response.data && response.data.choices && response.data.choices[0].message.content
+    ? response.data.choices[0].message.content
+    : '[empty]';
+  console.log('[OPENROUTER][RES] summary:', summary.slice(0, 500) + (summary.length > 500 ? '... [truncated]' : ''));
+
   if (response.data && response.data.choices && response.data.choices[0].message.content) {
-    return response.data.choices[0].message.content;
+    // Лог финального ответа
+    console.log('[OPENROUTER][OUT] summary length:', summary.length);
+    return summary;
   } else {
     throw new Error('No summary returned from OpenRouter');
   }

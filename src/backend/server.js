@@ -68,7 +68,11 @@ const PREMIUM_LIMIT = null; // null = безлимит
 // POST /api/generate-summary
 // Принимает: text, model, detailLevel, token/userId
 app.post('/api/generate-summary', async (req, res) => {
-  console.log('[SUMMARY] /api/generate-summary called', req.body);
+  // Логируем что пришло от фронта (text, model, detailLevel, token/userId)
+  const { text, model, detailLevel, token, userId } = req.body;
+  console.log('[SUMMARY][IN] text:', text ? text.slice(0, 500) + (text.length > 500 ? '... [truncated]' : '') : '[empty]');
+  console.log('[SUMMARY][IN] model:', model, 'detailLevel:', detailLevel, 'token:', token ? '[provided]' : '[none]', 'userId:', userId);
+
   try {
     let userId, isAuthorized = false, isPremium = false, email = null;
     let info = null;
