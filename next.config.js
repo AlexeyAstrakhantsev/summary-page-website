@@ -4,7 +4,7 @@ const nextConfig = {
     reactStrictMode: true,
     swcMinify: true,
     images: {
-      domains: ['placeholder.svg'], // Добавляем домены для изображений, при необходимости замените на ваши
+      // domains: ['placeholder.svg'], // deprecated, удалено
       unoptimized: process.env.NODE_ENV === 'development',
       remotePatterns: [
         {
@@ -12,6 +12,7 @@ const nextConfig = {
           hostname: '**',
         },
       ],
+      dangerouslyAllowSVG: true, // разрешить SVG (если нужен placeholder.svg)
     },
     env: {
       OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',

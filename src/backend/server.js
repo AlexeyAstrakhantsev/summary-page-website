@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
+const { generateSummary } = require('./openrouter');
 
 // Настройки базы и порта (SQLite файл и порт сервера)
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -65,6 +66,7 @@ const AUTH_LIMIT = 10;
 const PREMIUM_LIMIT = null; // null = безлимит
 
 // POST /api/generate-summary
+// Принимает: text, model, detailLevel, token/userId
 app.post('/api/generate-summary', async (req, res) => {
   console.log('[SUMMARY] /api/generate-summary called', req.body);
   try {
@@ -119,9 +121,15 @@ app.post('/api/generate-summary', async (req, res) => {
 
     // 4. Премиум — безлимит
     if (isAuthorized && isPremium) {
-      // TODO: Call your summary-generation logic here
-      console.log(`[SUMMARY] Premium user, skipping limit check.`);
-      return res.json({ summary: 'Summary would be generated here.', requestsMade: 0, requestsLimit: null });
+      // Генерируем саммари без лимита
+      try {
+        const { text, model, detailLevel } = req.body;
+        const summary = await generateSummary({ text, model, detailLevel });
+        return res.json({ summary, requestsMade: 0, requestsLimit: null });
+      } catch (err) {
+        console.error('[SUMMARY] OpenRouter error (premium):', err);
+        return res.status(500).json({ error: 'Ошибка генерации саммари (OpenRouter)' });
+      }
     }
 
     // 5. Работа с лимитом
@@ -150,10 +158,16 @@ app.post('/api/generate-summary', async (req, res) => {
       console.warn(`[SUMMARY] Daily limit exceeded for user ${userId} on ${today.toISOString()}`);
       return res.status(429).json({ error: 'Daily limit exceeded' });
     }
-    // TODO: Call your summary-generation logic here
-    // For now, just return a stub
-    console.log(`[SUMMARY] Success. userId=${userId} requestsMade=${userLimit.requestsMade} limit=${userLimit.requestsLimit}`);
-    res.json({ summary: 'Summary would be generated here.', requestsMade: userLimit.requestsMade, requestsLimit: userLimit.requestsLimit });
+    // Генерация саммари через OpenRouter
+    try {
+      const { text, model, detailLevel } = req.body;
+      const summary = await generateSummary({ text, model, detailLevel });
+      console.log(`[SUMMARY] Success. userId=${userId} requestsMade=${userLimit.requestsMade} limit=${userLimit.requestsLimit}`);
+      res.json({ summary, requestsMade: userLimit.requestsMade, requestsLimit: userLimit.requestsLimit });
+    } catch (err) {
+      console.error('[SUMMARY] OpenRouter error:', err);
+      res.status(500).json({ error: 'Ошибка генерации саммари (OpenRouter)' });
+    }
   } catch (e) {
     console.error('[SUMMARY] Error:', e);
     res.status(401).json({ error: 'Invalid token or server error' });
