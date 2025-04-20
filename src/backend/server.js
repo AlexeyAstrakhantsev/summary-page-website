@@ -61,9 +61,9 @@ app.post('/api/verify', async (req, res) => {
 });
 
 // --- Лимиты ---
-const UNAUTH_LIMIT = 3;
-const AUTH_LIMIT = 10;
-const PREMIUM_LIMIT = null; // null = безлимит
+const UNAUTH_LIMIT = Number(process.env.UNAUTH_LIMIT) || 3;
+const AUTH_LIMIT = Number(process.env.AUTH_LIMIT) || 10;
+const PREMIUM_LIMIT = process.env.PREMIUM_LIMIT === undefined || process.env.PREMIUM_LIMIT === 'null' ? null : Number(process.env.PREMIUM_LIMIT); // null = безлимит
 
 // POST /api/generate-summary
 // Принимает: text, model, detailLevel, token/userId
