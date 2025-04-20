@@ -18,23 +18,28 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/api/ping', (req, res) => {
+  console.log('[PING] Health check requested');
   res.json({ status: 'ok' });
 });
 
 // Google OAuth token verification
 async function verifyGoogleToken(idToken) {
   const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
+  console.log(`[OAUTH] Verifying Google token: ${idToken && idToken.slice(0, 10)}...`);
   const { data } = await axios.get(url);
   if (!data.sub) throw new Error('Invalid Google token');
+  console.log(`[OAUTH] Token valid for sub: ${data.sub}, email: ${data.email}`);
   return data;
-}
+} 
 
 // POST /api/verify
 app.post('/api/verify', async (req, res) => {
+  console.log('[VERIFY] /api/verify called', req.body);
   try {
     const { token } = req.body;
     const info = await verifyGoogleToken(token);
     // Upsert user
+    console.log(`[VERIFY] Upserting user: ${info.sub}, email: ${info.email}`);
     const user = await prisma.user.upsert({
       where: { id: info.sub },
       update: { lastLogin: new Date() },
@@ -46,58 +51,111 @@ app.post('/api/verify', async (req, res) => {
         lastLogin: new Date(),
       },
     });
+    console.log(`[VERIFY] User upserted:`, user);
     res.json({ userId: user.id, email: user.email, name: user.name });
   } catch (e) {
+    console.error('[VERIFY] Error:', e);
     res.status(401).json({ error: 'Invalid token' });
   }
 });
 
+// --- Лимиты ---
+const UNAUTH_LIMIT = 3;
+const AUTH_LIMIT = 10;
+const PREMIUM_LIMIT = null; // null = безлимит
+
 // POST /api/generate-summary
 app.post('/api/generate-summary', async (req, res) => {
+  console.log('[SUMMARY] /api/generate-summary called', req.body);
   try {
-    const { token, ...payload } = req.body;
-    const info = await verifyGoogleToken(token);
-    const userId = info.sub;
-    // Get or create user
-    const user = await prisma.user.upsert({
-      where: { id: userId },
-      update: { lastLogin: new Date() },
-      create: {
-        id: userId,
-        email: info.email,
-        name: info.name,
-        createdAt: new Date(),
-        lastLogin: new Date(),
-      },
-    });
-    // Date key for today (UTC)
+    let userId, isAuthorized = false, isPremium = false, email = null;
+    let info = null;
+    // 1. Определяем userId и статус
+    if (req.body.token) {
+      info = await verifyGoogleToken(req.body.token);
+      userId = info.sub;
+      isAuthorized = true;
+      email = info.email;
+    } else if (req.body.userId) {
+      userId = req.body.userId; // Для неавторизованных userId должен приходить с клиента
+      isAuthorized = false;
+      email = null;
+    } else {
+      return res.status(400).json({ error: 'No user identification provided' });
+    }
+
+    // 2. Upsert user (только если авторизован)
+    let user = null;
+    if (isAuthorized) {
+      console.log(`[SUMMARY] Upserting user: ${userId}, email: ${email}`);
+      user = await prisma.user.upsert({
+        where: { id: userId },
+        update: { lastLogin: new Date() },
+        create: {
+          id: userId,
+          email: info.email,
+          name: info.name,
+          createdAt: new Date(),
+          lastLogin: new Date(),
+        },
+      });
+      isPremium = !!user.isPremium;
+    } else {
+      console.log(`[SUMMARY] Unauth user: ${userId}`);
+    }
+
+    // 3. Определяем лимит
+    let dailyLimit = UNAUTH_LIMIT;
+    if (isAuthorized && isPremium) {
+      dailyLimit = PREMIUM_LIMIT;
+      console.log(`[SUMMARY] User is premium, no limit`);
+    } else if (isAuthorized) {
+      dailyLimit = AUTH_LIMIT;
+      console.log(`[SUMMARY] User is authorized, limit = ${AUTH_LIMIT}`);
+    } else {
+      dailyLimit = UNAUTH_LIMIT;
+      console.log(`[SUMMARY] User is unauth, limit = ${UNAUTH_LIMIT}`);
+    }
+
+    // 4. Премиум — безлимит
+    if (isAuthorized && isPremium) {
+      // TODO: Call your summary-generation logic here
+      console.log(`[SUMMARY] Premium user, skipping limit check.`);
+      return res.json({ summary: 'Summary would be generated here.', requestsMade: 0, requestsLimit: null });
+    }
+
+    // 5. Работа с лимитом
     const today = new Date();
     today.setUTCHours(0,0,0,0);
-    // Get or create limit record
     let userLimit = await prisma.userLimit.findUnique({
       where: { userId_date: { userId, date: today } },
     });
     if (!userLimit) {
+      console.log(`[SUMMARY] No limit record for user ${userId} on ${today.toISOString()}, creating new.`);
       userLimit = await prisma.userLimit.create({
         data: {
           userId,
           date: today,
           requestsMade: 1,
-          requestsLimit: 10,
+          requestsLimit: dailyLimit,
         },
       });
     } else if (userLimit.requestsMade < userLimit.requestsLimit) {
+      console.log(`[SUMMARY] Incrementing requestsMade for userLimit id=${userLimit.id}`);
       userLimit = await prisma.userLimit.update({
         where: { id: userLimit.id },
         data: { requestsMade: { increment: 1 } },
       });
     } else {
+      console.warn(`[SUMMARY] Daily limit exceeded for user ${userId} on ${today.toISOString()}`);
       return res.status(429).json({ error: 'Daily limit exceeded' });
     }
     // TODO: Call your summary-generation logic here
     // For now, just return a stub
+    console.log(`[SUMMARY] Success. userId=${userId} requestsMade=${userLimit.requestsMade} limit=${userLimit.requestsLimit}`);
     res.json({ summary: 'Summary would be generated here.', requestsMade: userLimit.requestsMade, requestsLimit: userLimit.requestsLimit });
   } catch (e) {
+    console.error('[SUMMARY] Error:', e);
     res.status(401).json({ error: 'Invalid token or server error' });
   }
 });
