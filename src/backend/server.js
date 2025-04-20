@@ -4,7 +4,7 @@ const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 
 // Настройки базы и порта (SQLite файл и порт сервера)
-const DATABASE_URL = "file:./dev.db";
+const DATABASE_URL = process.env.DATABASE_URL;
 const PORT = 4000;
 
 const prisma = new PrismaClient({
