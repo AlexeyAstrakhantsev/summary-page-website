@@ -160,7 +160,11 @@ app.post('/api/generate-summary', async (req, res) => {
       });
     } else {
       console.warn(`[SUMMARY] Daily limit exceeded for user ${userId} on ${today.toISOString()}`);
-      return res.status(429).json({ error: 'Daily limit exceeded' });
+      return res.status(429).json({
+        error: 'Daily limit exceeded',
+        requestsMade: userLimit.requestsMade,
+        requestsLimit: userLimit.requestsLimit
+      });
     }
     // Генерация саммари через OpenRouter
     try {
