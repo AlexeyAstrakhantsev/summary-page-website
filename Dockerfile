@@ -40,7 +40,7 @@ RUN npx prisma generate
 EXPOSE 3000 4000
 
 # Устанавливаем tini для управления процессами
-RUN apk add --no-cache tini
+RUN apk add --no-cache tini openssl1.1-compat
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Запуск: backend и frontend параллельно
