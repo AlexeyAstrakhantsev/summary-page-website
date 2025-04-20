@@ -144,6 +144,21 @@ app.post('/api/generate-summary', async (req, res) => {
     });
     if (!userLimit) {
       console.log(`[SUMMARY] No limit record for user ${userId} on ${today.toISOString()}, creating new.`);
+      // Для неавторизованных пользователей (userId не из Google) — создаём "гостевого" пользователя, если его нет
+      if (!isAuthorized) {
+        const guestUser = await prisma.user.upsert({
+          where: { id: userId },
+          update: {},
+          create: {
+            id: userId,
+            email: `guest+${userId}@local`,
+            name: 'Guest User',
+            createdAt: new Date(),
+            lastLogin: new Date(),
+            isPremium: false
+          }
+        });
+      }
       userLimit = await prisma.userLimit.create({
         data: {
           userId,
