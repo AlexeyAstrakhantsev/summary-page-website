@@ -23,13 +23,15 @@ app.get('/api/ping', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Google OAuth token verification
-async function verifyGoogleToken(idToken) {
-  const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
-  console.log(`[OAUTH] Verifying Google token: ${idToken && idToken.slice(0, 10)}...`);
-  const { data } = await axios.get(url);
-  if (!data.sub) throw new Error('Invalid Google token');
-  console.log(`[OAUTH] Token valid for sub: ${data.sub}, email: ${data.email}`);
+// Google OAuth access_token verification (userinfo endpoint)
+async function verifyGoogleToken(accessToken) {
+  const url = `https://www.googleapis.com/oauth2/v3/userinfo`;
+  console.log(`[OAUTH] Verifying Google access_token: ${accessToken && accessToken.slice(0, 10)}...`);
+  const { data } = await axios.get(url, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!data.sub) throw new Error('Invalid Google access_token');
+  console.log(`[OAUTH] Access token valid for sub: ${data.sub}, email: ${data.email}`);
   return data;
 } 
 
