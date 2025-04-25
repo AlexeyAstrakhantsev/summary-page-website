@@ -6,10 +6,17 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 
-# 2. Копируем только исходники и конфиги (часто меняются)
+# 2. Копируем исходники и конфиги (всё, что нужно для билда)
 COPY next.config.js ./
-COPY src ./src
+COPY postcss.config.js ./
+COPY tailwind.config.js ./
+COPY tsconfig.json ./
 COPY public ./public
+COPY src ./src
+COPY components ./components
+COPY lib ./lib
+COPY hooks ./hooks
+COPY styles ./styles
 COPY prisma ./prisma
 
 # 3. Сборка фронта и backend
