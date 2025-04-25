@@ -15,8 +15,6 @@ COPY public ./public
 COPY src ./src
 COPY components ./components
 COPY lib ./lib
-COPY hooks ./hooks
-COPY styles ./styles
 COPY prisma ./prisma
 
 # 3. Сборка фронта и backend
