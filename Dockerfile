@@ -2,17 +2,20 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# --- Install frontend dependencies ---
-COPY package.json ./
+# 1. Копируем только package.json и lock для кэширования зависимостей
+COPY package.json package-lock.json* ./
 RUN npm install
 
-# --- Install backend dependencies ---
+# 2. Копируем только исходники и конфиги (часто меняются)
+COPY next.config.js ./
+COPY src ./src
+COPY public ./public
+COPY prisma ./prisma
 
-# --- Copy and build app ---
-COPY . .
+# 3. Сборка фронта и backend
 RUN npm run build
 
-# --- Prisma generate & migrate ---
+# 4. Генерируем Prisma Client
 RUN npx prisma generate
 
 # --- Production image ---
@@ -22,7 +25,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Установим только runtime зависимости
-COPY package.json ./
+COPY package.json package-lock.json* ./
 RUN npm install --omit=dev
 
 # Копируем собранный фронт и backend
@@ -35,10 +38,8 @@ COPY --from=base /app/prisma ./prisma
 # Генерируем Prisma Client для production
 RUN npx prisma generate
 
-# Открываем порты
 EXPOSE 3000 4000
 
-# Устанавливаем tini для управления процессами
 RUN apk add --no-cache tini openssl1.1 || apk add --no-cache tini openssl
 ENTRYPOINT ["/sbin/tini", "--"]
 
