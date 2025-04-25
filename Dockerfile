@@ -12,6 +12,7 @@ COPY postcss.config.js ./
 COPY tailwind.config.js ./
 COPY tsconfig.json ./
 COPY public ./public
+COPY app ./app
 COPY src ./src
 COPY components ./components
 COPY lib ./lib
