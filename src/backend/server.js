@@ -17,6 +17,46 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// GET /api/user-info
+// ?token=... или ?userId=...
+app.get('/api/user-info', async (req, res) => {
+  try {
+    let userId, info = null, isAuthorized = false;
+    if (req.query.token) {
+      info = await verifyGoogleToken(req.query.token);
+      userId = info.sub;
+      isAuthorized = true;
+    } else if (req.query.userId) {
+      userId = req.query.userId;
+      isAuthorized = false;
+    } else {
+      return res.status(400).json({ error: 'No user identification provided' });
+    }
+    // Найти пользователя в базе
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { limits: true },
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      isPremium: user.isPremium,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      limits: user.limits.map(l => ({
+        date: l.date,
+        requestsMade: l.requestsMade,
+        requestsLimit: l.requestsLimit
+      }))
+    });
+  } catch (e) {
+    console.error('[USER-INFO] Error:', e);
+    res.status(500).json({ error: 'Failed to get user info' });
+  }
+});
+
 // Health check endpoint
 app.get('/api/ping', (req, res) => {
   console.log('[PING] Health check requested');
