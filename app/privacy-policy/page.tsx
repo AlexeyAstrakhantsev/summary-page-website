@@ -42,7 +42,10 @@ export default function PrivacyPolicy() {
       <div className="mt-6">
         <b>Contact:</b> <a className="underline text-blue-600" href="mailto:info@summary-page.online">info@summary-page.online</a>
       </div>
-    
+    </main>
+  );
+}
+
       <h1 className="text-3xl font-bold mb-4">Privacy Policy for SummaryPage</h1>
       <p className="mb-2 text-gray-600">Effective Date: April 27, 2025</p>
 

@@ -28,17 +28,7 @@ export default function TermsOfService() {
         <b>Contact:</b> <a className="underline text-blue-600" href="mailto:info@summary-page.online">info@summary-page.online</a>
       </div>
     
-    <div className="flex flex-col items-center py-12 px-4">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-        <div className="text-sm text-gray-500 mb-6">Last Updated: 19.04.2025</div>
-        <h2 className="text-xl font-semibold mt-4 mb-2">1. Acceptance</h2>
-        <ul className="list-disc pl-5 mb-4 space-y-1">
-          <li>By using the extension, you agree to these terms.</li>
-        </ul>
-        <h2 className="text-xl font-semibold mt-4 mb-2">2. Usage Rules</h2>
-        <ul className="list-disc pl-5 mb-4 space-y-1">
-          <li>You may not use the extension for illegal content or spam.</li>
+
           <li><b>API Keys:</b> You are responsible for your OpenRouter API usage costs.</li>
         </ul>
         <h2 className="text-xl font-semibold mt-4 mb-2">3. Disclaimer</h2>
