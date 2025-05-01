@@ -50,9 +50,6 @@ def get_google_userinfo(token: str):
         raise HTTPException(status_code=401, detail="Invalid Google token")
 
 
-
-
-
 @app.get("/api/user-info", response_model=UserInfo)
 async def user_info(token: Optional[str] = Query(None), userId: Optional[str] = Query(None)):
     if token:
@@ -96,6 +93,7 @@ class SummaryRequest(BaseModel):
     detailLevel: Optional[str] = None
     token: Optional[str] = None
     userId: Optional[str] = None
+    lang: Optional[str] = "ru"  # Язык саммари (ru, en, de, fr)
 
 @app.get("/api/ping")
 def ping():
@@ -176,7 +174,7 @@ async def generate_summary_api(req: SummaryRequest):
             raise HTTPException(status_code=429, detail="Daily limit exceeded")
         session.commit()
         try:
-            summary = await generate_summary(req.text, req.model, req.detailLevel)
+            summary = await generate_summary(req.text, req.model, req.detailLevel, req.lang)
             return {
                 "summary": summary,
                 "requestsMade": user_limit.requests_made,
