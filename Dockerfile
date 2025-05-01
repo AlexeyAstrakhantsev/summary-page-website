@@ -16,6 +16,3 @@ COPY . .
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4000"]
 
 EXPOSE 4000
-
-
-CMD ["sh", "-c", "node src/backend/server.js & npm start"]
