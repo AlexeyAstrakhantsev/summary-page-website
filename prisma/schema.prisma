@@ -5,6 +5,11 @@ generator client {
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
+generator pyclient {
+  provider = "prisma-client-py"
+  output   = "prisma"
+}
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
