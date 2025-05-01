@@ -187,21 +187,4 @@ async def generate_summary_api(req: SummaryRequest):
             if msg.startswith("openrouter_limit:"):
                 raise HTTPException(status_code=503, detail="OpenRouter daily limit exceeded")
             raise HTTPException(status_code=500, detail="Ошибка генерации саммари (OpenRouter)")
-            "error": "Daily limit exceeded",
-            "requestsMade": user_limit.requestsMade,
-            "requestsLimit": user_limit.requestsLimit,
-        })
-    # Генерация саммари через OpenRouter
-    try:
-        summary = await generate_summary(req.text, req.model, req.detailLevel)
-        return {
-            "summary": summary,
-            "requestsMade": user_limit.requestsMade,
-            "requestsLimit": user_limit.requestsLimit,
-        }
-    except Exception as err:
-        msg = str(err)
-        if msg.startswith("openrouter_limit:"):
-            raise HTTPException(status_code=503, detail="OpenRouter daily limit exceeded")
-        raise HTTPException(status_code=500, detail="Ошибка генерации саммари (OpenRouter)")
 
