@@ -1,4 +1,5 @@
 fastapi
 uvicorn
-prisma
+sqlmodel
+aiosqlite
 httpx
