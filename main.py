@@ -215,7 +215,7 @@ async def get_youtube_transcript(video_id: str, lang: Optional[str] = "ru"):
         formatted_transcript = formatter.format_transcript(transcript_data)
         
         # Вычисляем общую длительность видео
-        duration = sum(item['duration'] for item in transcript_data)
+        duration = sum(float(item.duration) for item in transcript_data)
         
         return TranscriptResponse(
             video_id=video_id,
