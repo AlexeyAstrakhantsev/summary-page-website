@@ -230,3 +230,49 @@ async def get_youtube_transcript(video_id: str, lang: Optional[str] = "ru"):
             detail=f"Ошибка при получении субтитров: {str(e)}"
         )
 
+class YouTubeSummaryRequest(BaseModel):
+    video_id: str
+    model: Optional[str] = None
+    detail_level: Optional[str] = None
+    lang: Optional[str] = "ru"
+
+@app.post("/api/youtube-summary", response_model=dict)
+async def generate_youtube_summary(req: YouTubeSummaryRequest):
+    try:
+        # Получаем субтитры
+        transcript_list = YouTubeTranscriptApi.list_transcripts(req.video_id)
+        
+        # Пытаемся получить субтитры на указанном языке
+        try:
+            transcript = transcript_list.find_transcript([req.lang])
+        except:
+            # Если субтитры на указанном языке не найдены, берем автоматически сгенерированные
+            transcript = transcript_list.find_transcript(['ru', 'en'])
+        
+        # Получаем текст субтитров
+        transcript_data = transcript.fetch()
+        
+        # Форматируем субтитры в текст
+        formatter = TextFormatter()
+        formatted_transcript = formatter.format_transcript(transcript_data)
+        
+        # Генерируем саммари на основе субтитров
+        summary = await generate_summary(
+            text=formatted_transcript,
+            model=req.model,
+            detail_level=req.detail_level,
+            lang=req.lang
+        )
+        
+        return {
+            "video_id": req.video_id,
+            "summary": summary,
+            "language": transcript.language_code
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ошибка при генерации саммари: {str(e)}"
+        )
+
