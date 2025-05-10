@@ -4,3 +4,4 @@ sqlmodel
 aiosqlite
 httpx
 pytz
+youtube-transcript-api

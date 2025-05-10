@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import os
 import httpx
 from sqlmodel import SQLModel, Session, select, create_engine
 from src.models import User, UserLimit
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.formatters import TextFormatter
 
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -185,4 +187,46 @@ async def generate_summary_api(req: SummaryRequest):
             if msg.startswith("openrouter_limit:"):
                 raise HTTPException(status_code=503, detail="OpenRouter daily limit exceeded")
             raise HTTPException(status_code=500, detail="Ошибка генерации саммари (OpenRouter)")
+
+class TranscriptResponse(BaseModel):
+    video_id: str
+    transcript: str
+    language: str
+    duration: float
+
+@app.get("/api/youtube-transcript/{video_id}", response_model=TranscriptResponse)
+async def get_youtube_transcript(video_id: str, lang: Optional[str] = "ru"):
+    try:
+        # Получаем субтитры
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        
+        # Пытаемся получить субтитры на указанном языке
+        try:
+            transcript = transcript_list.find_transcript([lang])
+        except:
+            # Если субтитры на указанном языке не найдены, берем автоматически сгенерированные
+            transcript = transcript_list.find_transcript(['ru', 'en'])
+        
+        # Получаем текст субтитров
+        transcript_data = transcript.fetch()
+        
+        # Форматируем субтитры в текст
+        formatter = TextFormatter()
+        formatted_transcript = formatter.format_transcript(transcript_data)
+        
+        # Вычисляем общую длительность видео
+        duration = sum(item['duration'] for item in transcript_data)
+        
+        return TranscriptResponse(
+            video_id=video_id,
+            transcript=formatted_transcript,
+            language=transcript.language_code,
+            duration=duration
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ошибка при получении субтитров: {str(e)}"
+        )
 
